@@ -36,10 +36,39 @@ func NewSQLiteStorage(dataSourceName string) (*SQLiteStorage, error) {
 	return &SQLiteStorage{db: db}, nil
 }
 
-func (s *SQLiteStorage) SaveLog(entry collector.LogEntry) error {
-	_, err := s.db.Exec(`INSERT INTO logs (level, message) VALUES (?, ?)`, entry.Level, entry.Message)
-	return err
+var _ LogStorage = (*SQLiteStorage)(nil)
 
+func (s *SQLiteStorage) SaveLog(entry collector.LogEntry) error {
+	_, err := s.db.Exec("INSERT INTO logs (level, message, timestamp) VALUES (?, ?, ?)",
+		entry.Level, entry.Message, entry.Time)
+	return err
+}
+
+func (s *SQLiteStorage) Save(logs []collector.LogEntry) error {
+	for _, entry := range logs {
+		if err := s.SaveLog(entry); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *SQLiteStorage) QueryLogs(limit int) ([]collector.LogEntry, error) {
+	rows, err := s.db.Query("SELECT level, message, timestamp FROM logs ORDER BY timestamp DESC LIMIT ?", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []collector.LogEntry
+	for rows.Next() {
+		var entry collector.LogEntry
+		if err := rows.Scan(&entry.Level, &entry.Message, &entry.Time); err != nil {
+			return nil, err
+		}
+		results = append(results, entry)
+	}
+	return results, nil
 }
 
 func (s *SQLiteStorage) Close() error {

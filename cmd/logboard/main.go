@@ -17,22 +17,23 @@ func main() {
 	// Initialize components
 	fmt.Println("Starting Logboard...")
 
-	store, err := storage.NewSQLiteStorage("data.db")
+	var store storage.LogStorage
+	sqliteStore, err := storage.NewSQLiteStorage("data.db")
 	if err != nil {
-		log.Fatal("Error initializing storage:", err)
+		log.Fatal("Failed to initialize storage:", err)
 	}
-	defer store.Close()
+	defer sqliteStore.Close()
+	store = sqliteStore
 
-	// Create a file collector
 	fileCollector := &collector.FileCollector{Path: "logs.txt"}
-
 	logs, err := fileCollector.Collect()
 	if err != nil {
-		log.Fatal("Error collecting logs:", err)
+		log.Fatal("Failed to collect logs:", err)
 	}
 
-	// Store collected logs
-	for _, logEntry := range logs {
-		store.SaveLog(logEntry)
+	if err := store.Save(logs); err != nil {
+		log.Fatal("Failed to save logs:", err)
 	}
+
+	fmt.Println("Logs saved successfully!")
 }
