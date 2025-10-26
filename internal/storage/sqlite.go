@@ -7,9 +7,10 @@ package storage
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/AndreaBozzo/go-lab/internal/collector"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type SQLiteStorage struct {
@@ -17,7 +18,7 @@ type SQLiteStorage struct {
 }
 
 func NewSQLiteStorage(dataSourceName string) (*SQLiteStorage, error) {
-	db, err := sql.Open("sqlite3", dataSourceName)
+	db, err := sql.Open("sqlite", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
@@ -25,9 +26,17 @@ func NewSQLiteStorage(dataSourceName string) (*SQLiteStorage, error) {
 	// Create logs table if not exists
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		source TEXT,
 		level TEXT,
 		message TEXT,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+		method TEXT,
+		path TEXT,
+		status_code INTEGER,
+		latency_ms INTEGER,
+		client_ip TEXT,
+		user_agent TEXT,
+		backend TEXT
 	)`)
 	if err != nil {
 		return nil, err
@@ -39,8 +48,12 @@ func NewSQLiteStorage(dataSourceName string) (*SQLiteStorage, error) {
 var _ LogStorage = (*SQLiteStorage)(nil)
 
 func (s *SQLiteStorage) SaveLog(entry collector.LogEntry) error {
-	_, err := s.db.Exec("INSERT INTO logs (level, message, timestamp) VALUES (?, ?, ?)",
-		entry.Level, entry.Message, entry.Time)
+	_, err := s.db.Exec(`INSERT INTO logs
+		(source, level, message, timestamp, method, path, status_code, latency_ms, client_ip, user_agent, backend)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		entry.Source, entry.Level, entry.Message, entry.Time,
+		entry.Method, entry.Path, entry.StatusCode, entry.Latency.Milliseconds(),
+		entry.ClientIP, entry.UserAgent, entry.Backend)
 	return err
 }
 
@@ -54,7 +67,8 @@ func (s *SQLiteStorage) Save(logs []collector.LogEntry) error {
 }
 
 func (s *SQLiteStorage) QueryLogs(limit int) ([]collector.LogEntry, error) {
-	rows, err := s.db.Query("SELECT level, message, timestamp FROM logs ORDER BY timestamp DESC LIMIT ?", limit)
+	rows, err := s.db.Query(`SELECT source, level, message, timestamp, method, path, status_code, latency_ms, client_ip, user_agent, backend
+		FROM logs ORDER BY timestamp DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +77,13 @@ func (s *SQLiteStorage) QueryLogs(limit int) ([]collector.LogEntry, error) {
 	var results []collector.LogEntry
 	for rows.Next() {
 		var entry collector.LogEntry
-		if err := rows.Scan(&entry.Level, &entry.Message, &entry.Time); err != nil {
+		var latencyMs int64
+		if err := rows.Scan(&entry.Source, &entry.Level, &entry.Message, &entry.Time,
+			&entry.Method, &entry.Path, &entry.StatusCode, &latencyMs,
+			&entry.ClientIP, &entry.UserAgent, &entry.Backend); err != nil {
 			return nil, err
 		}
+		entry.Latency = time.Duration(latencyMs) * time.Millisecond
 		results = append(results, entry)
 	}
 	return results, nil

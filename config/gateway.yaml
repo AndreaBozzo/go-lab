@@ -1,0 +1,40 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+  shutdown_timeout: 10s
+
+logging:
+  database: "gateway.db"
+  level: "info"
+
+rate_limiting:
+  enabled: true
+  requests_per_second: 100
+  burst: 50
+
+cors:
+  enabled: true
+  allowed_origins: ["*"]
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+  allowed_headers: ["Origin", "Content-Type", "Accept", "Authorization"]
+
+routes:
+  # Route for user service - load balanced across 2 backends
+  - path: "/api/users/*filepath"
+    backends:
+      - url: "http://localhost:9001"
+        weight: 1
+      - url: "http://localhost:9002"
+        weight: 1
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    rate_limit: 50
+
+  # Route for order service - single backend
+  - path: "/api/orders/*filepath"
+    backends:
+      - url: "http://localhost:9003"
+        weight: 1
+    methods: ["GET", "POST"]
+    rate_limit: 30

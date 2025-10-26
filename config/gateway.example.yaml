@@ -1,0 +1,58 @@
+# Example API Gateway Configuration
+# Copy this file to gateway.yaml and customize for your needs
+
+server:
+  # Server binding configuration
+  host: "0.0.0.0"          # Listen on all interfaces
+  port: 8080               # Gateway port
+  read_timeout: 30s        # Maximum duration for reading request
+  write_timeout: 30s       # Maximum duration for writing response
+  shutdown_timeout: 10s    # Maximum time to wait for graceful shutdown
+
+logging:
+  # Logging configuration
+  database: "gateway.db"   # SQLite database file for logs
+  level: "info"            # Log level: debug, info, warn, error
+
+rate_limiting:
+  # Global rate limiting
+  enabled: true            # Enable/disable rate limiting
+  requests_per_second: 100 # Maximum requests per second
+  burst: 50                # Maximum burst size
+
+cors:
+  # Cross-Origin Resource Sharing configuration
+  enabled: true
+  allowed_origins: ["*"]   # Allowed origins (use ["*"] for all, or specific domains)
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+  allowed_headers: ["Origin", "Content-Type", "Accept", "Authorization"]
+
+routes:
+  # Define your routes here
+  # Each route can have multiple backends for load balancing
+
+  # Example: User service with load balancing
+  - path: "/api/users/*"
+    backends:
+      - url: "http://localhost:9001"
+        weight: 1          # Weight for load balancing (higher = more traffic)
+      - url: "http://localhost:9002"
+        weight: 1
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    rate_limit: 50         # Per-route rate limit (requests/second)
+
+  # Example: Order service with single backend
+  - path: "/api/orders/*"
+    backends:
+      - url: "http://localhost:9003"
+        weight: 1
+    methods: ["GET", "POST"]
+    rate_limit: 30
+
+  # Example: External API proxy
+  # - path: "/api/external/*"
+  #   backends:
+  #     - url: "https://api.example.com"
+  #       weight: 1
+  #   methods: ["GET"]
+  #   rate_limit: 10

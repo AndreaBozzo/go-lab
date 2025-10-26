@@ -15,6 +15,15 @@ type LogEntry struct {
 	Level   string
 	Message string
 	Time    time.Time
+
+	// HTTP-specific fields for API Gateway logging
+	Method     string
+	Path       string
+	StatusCode int
+	Latency    time.Duration
+	ClientIP   string
+	UserAgent  string
+	Backend    string // Backend server that handled the request
 }
 
 type Collector interface {
