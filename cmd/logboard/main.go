@@ -1,3 +1,8 @@
+/*
+cmd/logboard/main.go
+Logboard is a simple logging application that collects logs from various sources and stores them in a SQLite database.
+*/
+
 package main
 
 import (

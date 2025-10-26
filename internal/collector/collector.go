@@ -1,3 +1,8 @@
+/*
+internal/collector/collector.go
+Package collector provides log collection capabilities from various sources.
+*/
+
 package collector
 
 import (

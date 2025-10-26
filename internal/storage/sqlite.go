@@ -1,3 +1,8 @@
+/*
+internal/storage/sqlite.go
+Package storage provides SQLite storage implementation for log entries.
+*/
+
 package storage
 
 import (
