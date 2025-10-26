@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/AndreaBozzo/go-logboard/internal/collector"
-	"github.com/AndreaBozzo/go-logboard/internal/storage"
+	"github.com/AndreaBozzo/go-lab/internal/collector"
+	"github.com/AndreaBozzo/go-lab/internal/storage"
 )
 
 func main() {
@@ -27,5 +27,7 @@ func main() {
 	}
 
 	// Store collected logs
-	store.SaveLogs(logs)
+	for _, logEntry := range logs {
+		store.SaveLog(logEntry)
+	}
 }

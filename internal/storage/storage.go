@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/AndreaBozzo/go-logboard/internal/collector"
+import "github.com/AndreaBozzo/go-lab/internal/collector"
 
 type LogStorage interface {
 	Save(logs []collector.LogEntry) error

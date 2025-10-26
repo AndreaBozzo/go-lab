@@ -3,7 +3,7 @@ package storage
 import (
 	"database/sql"
 
-	"github.com/AndreaBozzo/go-logboard/internal/collector"
+	"github.com/AndreaBozzo/go-lab/internal/collector"
 	_ "github.com/mattn/go-sqlite3"
 )
 
