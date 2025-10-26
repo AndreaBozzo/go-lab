@@ -11,29 +11,37 @@ import (
 
 	"github.com/AndreaBozzo/go-lab/internal/collector"
 	"github.com/AndreaBozzo/go-lab/internal/storage"
+	"github.com/AndreaBozzo/go-lab/pkg/logutil"
 )
 
 func main() {
-	// Initialize components
-	fmt.Println("Starting Logboard...")
+	// Initialize storage
+	log.Println("Starting Logboard...")
 
-	var store storage.LogStorage
+	// Initialize SQLite storage
 	sqliteStore, err := storage.NewSQLiteStorage("data.db")
 	if err != nil {
-		log.Fatal("Failed to initialize storage:", err)
+		log.Fatalf("Failed to initialize SQLite storage: %v", err)
 	}
 	defer sqliteStore.Close()
-	store = sqliteStore
 
+	// Initialize persistent log
+	logger := logutil.NewLogger(sqliteStore)
+	logger.Println("Logboard initialized successfully.")
+
+	// Create file collector
 	fileCollector := &collector.FileCollector{Path: "logs.txt"}
 	logs, err := fileCollector.Collect()
 	if err != nil {
-		log.Fatal("Failed to collect logs:", err)
+		logger.Printf("Failed to collect logs: %v", err)
+		return
 	}
 
-	if err := store.Save(logs); err != nil {
-		log.Fatal("Failed to save logs:", err)
+	// Store collected logs
+	if err := sqliteStore.Save(logs); err != nil {
+		logger.Fatalf("Failed to store logs: %v", err)
 	}
 
-	fmt.Println("Logs saved successfully!")
+	logger.Printf("Successfully collected and stored %d logs.", len(logs))
+	fmt.Println("Logboard operation completed.")
 }
